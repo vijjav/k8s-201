@@ -1,0 +1,141 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: redis
+    tier: backend
+  name: db-backend
+spec:
+  ports:
+    - name: "db-backend"
+      port: 6379
+      targetPort: 6379
+  selector:
+    app: redis
+    tier: backend
+status:
+  loadBalancer: {}
+
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    app: redis
+    tier: backend
+  name: db-backend
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 8Gi
+  volumeMode: Filesystem
+  
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: redis
+    tier: backend
+  name: db-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+      tier: backend
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        app: redis
+        tier: backend
+    spec:
+      containers:
+      - env:
+          - name: ALLOW_EMPTY_PASSWORD
+            value: "yes"
+        image: mcr.microsoft.com/oss/bitnami/redis:6.0.8
+        name: redisdb
+        ports:
+          - containerPort: 6379
+        resources: {}
+        volumeMounts:
+        - mountPath: /bitnami/redis/data
+          name: db-backend-data
+      volumes:
+      - name: db-backend-data
+        persistentVolumeClaim:
+          claimName: db-backend
+      restartPolicy: Always
+status: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: web
+    tier: frontend
+  name: app-frontend
+spec:
+  type: LoadBalancer
+  ports:
+    - name: "app-frontend"
+      port: 8080
+      targetPort: 80
+      nodePort: 30964
+  selector:
+    app: web
+    tier: frontend
+status:
+  loadBalancer: {}
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: web
+    tier: frontend
+  name: app-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: web
+      tier: frontend
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        app: web
+        tier: frontend
+    spec:
+      containers:
+        - env:
+            - name: REDIS
+              value: db-backend
+          image: vijjav/k8s-201:1.0
+          name: pythonapp
+          ports:
+            - containerPort: 80
+          resources: {}
+      restartPolicy: Always
+status: {}
+---
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: app-frontend
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: app-frontend
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 50

@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    io.kompose.service: app-frontend
+  name: app-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: app-frontend
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        io.kompose.service: app-frontend
+    spec:
+      containers:
+        - env:
+            - name: REDIS
+              value: db-backend
+          image: vijjav/k8s-201:1.0
+          name: pythonapp
+          ports:
+            - containerPort: 80
+          resources: {}
+      restartPolicy: Always
+status: {}

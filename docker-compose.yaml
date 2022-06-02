@@ -1,0 +1,17 @@
+version: '3'
+services:
+  db-backend:
+    image: mcr.microsoft.com/oss/bitnami/redis:6.0.8
+    container_name: redisdb
+    environment:
+      ALLOW_EMPTY_PASSWORD: "yes"
+    ports:
+        - "6379:6379"
+
+  app-frontend:
+    image: vijjav/k8s-201:1.0
+    container_name: pythonapp
+    environment:
+      REDIS: db-backend
+    ports:
+        - "8080:80"
