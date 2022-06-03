@@ -30,8 +30,8 @@ spec:
   - ReadWriteOnce
   resources:
     requests:
-      storage: 8Gi
-  volumeMode: Filesystem
+      storage: 2Gi
+volumeMode: Filesystem
   
 ---
 apiVersion: apps/v1
@@ -58,6 +58,8 @@ spec:
       - env:
           - name: ALLOW_EMPTY_PASSWORD
             value: "yes"
+          - name: REDIS_AOF_ENABLED
+            value: "no"
         image: mcr.microsoft.com/oss/bitnami/redis:6.0.8
         name: redisdb
         ports:
